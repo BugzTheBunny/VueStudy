@@ -13,16 +13,9 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title>
-          <div class="absolute-center">
-            <div class="toolbar-title-text">
-              <q-icon name="savings" /> 
-              Moneyballs
-            </div>
-          </div>
-        </q-toolbar-title>
+        <ToolbarTitle />
 
-        <q-btn 
+        <q-btn
           v-if="$route.fullPath === '/'"
           @click="storeEntries.options.sort = !storeEntries.options.sort"
           :label="!storeEntries.options.sort ? 'Sort' : 'Done'"
@@ -55,7 +48,7 @@
           :key="link.title"
           v-bind="link"
         />
-
+        <!-- Quit item -->
         <q-item
           v-if="$q.platform.is.electron"
           @click="quitApp"
@@ -73,6 +66,32 @@
             <q-item-label>Quit</q-item-label>
           </q-item-section>
         </q-item>
+
+
+        <!-- Log out item -->
+        <q-separator spaced />
+
+        <q-item
+          @click="storeAuth.logoutUser"
+          clickable
+          class="text-white"
+          tag="a"
+        >
+          <q-item-section
+            avatar
+          >
+            <q-icon name="logout" />
+          </q-item-section>
+
+          <q-item-section>
+            <q-item-label>Log out</q-item-label>
+            <q-item-label
+              v-if="storeAuth.userDetails.email"
+              caption
+              class="text-white"
+              >{{ storeAuth.userDetails.email }}</q-item-label>
+          </q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
@@ -87,6 +106,8 @@ import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useStoreEntries } from 'src/stores/storeEntries'
 import { useLightOrDark } from 'src/use/useLightOrDark'
+import { useStoreAuth } from 'src/stores/storeAuth'
+import ToolbarTitle from 'components/Layout/ToolbarTitle.vue'
 import NavLink from 'components/Nav/NavLink.vue'
 
 defineOptions({
@@ -94,7 +115,8 @@ defineOptions({
 })
 
 const $q = useQuasar(),
-      storeEntries = useStoreEntries()
+      storeEntries = useStoreEntries(),
+      storeAuth = useStoreAuth()
 
 const navLinks = [
   {

@@ -104,7 +104,7 @@
         v-if="storeEntries.options.sort"
         side
       >
-        <q-icon 
+        <q-icon
           class="handle"
           name="reorder"
           color="primary"
@@ -120,7 +120,7 @@
   /*
     imports
   */
-  
+
     import { Dialog } from '@capacitor/dialog'
     import { useQuasar } from 'quasar'
     import { useStoreEntries } from 'src/stores/storeEntries'
@@ -135,7 +135,7 @@
   /*
     stores
   */
-  
+
     const storeEntries = useStoreEntries(),
           storeSettings = useStoreSettings()
 
@@ -143,7 +143,7 @@
   /*
     props
   */
-  
+
     const props = defineProps({
       entry: {
         type: Object,
@@ -153,19 +153,19 @@
         type: Number,
         required: true
       }
-    })  
+    })
 
 
   /*
     quasar
   */
-  
-    const $q = useQuasar()  
+
+    const $q = useQuasar()
 
   /*
     slide items
   */
-  
+
     const onEntrySlideLeft = ({ reset }) => {
       storeEntries.updateEntry(props.entry.id, { paid: !props.entry.paid })
       reset()
@@ -228,7 +228,7 @@
   /*
     name & amount update
   */
-  
+
     const onNameUpdate = value => {
       storeEntries.updateEntry(props.entry.id, { name: value })
     }

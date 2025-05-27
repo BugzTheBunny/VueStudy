@@ -3,6 +3,7 @@ import { ref, computed, reactive, nextTick } from 'vue'
 import { Notify } from 'quasar'
 import { useShowErrorMessage } from 'src/use/useShowErrorMessage'
 import { useNoneReactiveCopy } from 'src/use/useNoneReactiveCopy'
+import { useStoreAuth } from 'src/stores/storeAuth'
 import supabase from 'src/config/supabase'
 
 export const useStoreEntries = defineStore('entries', () => {
@@ -16,25 +17,33 @@ export const useStoreEntries = defineStore('entries', () => {
       //   id: 'id1',
       //   name: 'Salary',
       //   amount: 4999.99,
-      //   paid: true
+      //   paid: true,
+      //   order: 1,
+      //   user_id: 'user-id-123',
       // },
       // {
       //   id: 'id2',
       //   name: 'Rent',
       //   amount: -999,
-      //   paid: false
+      //   paid: false,
+      //   order: 2,
+      //   user_id: 'user-id-123',
       // },
       // {
       //   id: 'id3',
       //   name: 'Phone bill',
       //   amount: -14.99,
-      //   paid: false
+      //   paid: false,
+      //   order: 3,
+      //   user_id: 'user-id-123',
       // },
       // {
       //   id: 'id4',
       //   name: 'Unknown',
       //   amount: 0,
-      //   paid: false
+      //   paid: false,
+      //   order: 4,
+      //   user_id: 'user-id-123',
       // },
     ])
 
@@ -43,7 +52,6 @@ export const useStoreEntries = defineStore('entries', () => {
     const options = reactive({
       sort: false
     })
-
 
   /*
     getters
@@ -76,16 +84,19 @@ export const useStoreEntries = defineStore('entries', () => {
       return runningBalances
     })
 
-
   /*
     actions
   */
 
     const loadEntries = async () => {
       loadEntries.value = false
+      const storeAuth = useStoreAuth()
+
       let { data, error } = await supabase
         .from('entries')
         .select('*')
+        .eq('user_id', storeAuth.userDetails.id)
+        .order('order', { ascending: false })
 
       if (error) useShowErrorMessage(error?.message || 'Failed to load entries')
       if (data) {
@@ -96,12 +107,12 @@ export const useStoreEntries = defineStore('entries', () => {
     }
 
     const subscribeEntries = () => {
+      const storeAuth = useStoreAuth()
       supabase.channel('entries_channel')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'entries' },
+        { event: '*', schema: 'public', table: 'entries' ,filter: `user_id=eq.${storeAuth.userDetails.id}`},
         (payload) => {
-          console.log('Change received!', payload)
           if (payload.eventType === 'INSERT') {
             entries.value.push(payload.new)
           }
@@ -123,7 +134,12 @@ export const useStoreEntries = defineStore('entries', () => {
     }
 
     const addEntry = async addEntryForm => {
-      const newEntry = Object.assign({}, addEntryForm, { paid: false })
+      const storeAuth = useStoreAuth()
+      const newEntry = Object.assign({}, addEntryForm, {
+         paid: false,
+         order: generateOrderNumber(),
+         user_id: storeAuth.userDetails.id
+        })
       if (newEntry.amount ===  null) newEntry.amount = 0
       const { error } = await supabase
         .from('entries')
@@ -172,17 +188,48 @@ export const useStoreEntries = defineStore('entries', () => {
       }
     }
 
+    const updateEntryOrderNumbers = async () => {
+      let currentOrder = 1
+      entries.value.forEach(entry => {
+        entry.order = currentOrder
+        currentOrder++
+      })
+
+      const entriesUpsert = entries.value.map(entry => {
+        return {
+          id: entry.id,
+          order: entry.order
+        }
+      })
+
+      const { error } = await supabase
+      .from('entries')
+      .upsert(entriesUpsert)
+      .select()
+
+      if (error) {
+        useShowErrorMessage(error?.message || 'Failed to update entry order numbers')
+      }
+    }
+
     const sortEnd = ({ oldIndex, newIndex }) => {
       const movedEntry = entries.value[oldIndex]
       entries.value.splice(oldIndex, 1)
       entries.value.splice(newIndex, 0, movedEntry)
+      updateEntryOrderNumbers()
     }
-
-
 
   /*
     helpers
   */
+
+    const generateOrderNumber = () => {
+      const orderNumbers = entries.value.map(entry => entry.order),
+        newOrderNumber = orderNumbers.length
+                          ? Math.max(...orderNumbers) + 1
+                          : 1
+      return newOrderNumber
+    }
 
     const getEntryIndexById = entryId => {
       return entries.value.findIndex(entry => entry.id === entryId)
