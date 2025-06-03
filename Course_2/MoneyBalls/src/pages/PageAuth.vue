@@ -7,6 +7,16 @@
         <ToolbarTitle/>
       </q-card-section>
 
+      <q-card-section class="q-pb-none">
+        <q-banner
+        :class="{'fade-in': entriesCount}"
+        class="bg-primary text-white text-center text-italic entries-count"
+        >
+          <div>Over {{ entriesCount }}</div>
+          <div>Created with Moneyballs</div>
+        </q-banner>
+      </q-card-section>
+
       <!-- Tabs -->
       <q-card-section>
         <q-tabs v-model="tab">
@@ -58,11 +68,13 @@
 /*
  imports
 */
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import ToolbarTitle from 'src/components/Layout/ToolbarTitle.vue';
 import { useLightOrDark } from 'src/use/useLightOrDark';
 import { useStoreAuth } from 'src/stores/storeAuth';
+import supabase from 'src/config/supabase';
+import { useShowErrorMessage } from 'src/use/useShowErrorMessage';
 
 /*
   store
@@ -74,6 +86,23 @@ const storeAuth = useStoreAuth();
 */
 
 const $q = useQuasar();
+
+/*
+  entries count
+*/
+
+const entriesCount = ref(null);
+
+onMounted(async ()  => {
+  let { data:stats, error } = await supabase
+    .from('stats')
+    .select('*')
+    .eq('name', 'entries_count')
+
+    if (stats) entriesCount.value = stats[0].value;
+
+  if (error) { useShowErrorMessage(error.message); return; }
+  });
 
 /*
   Tabs

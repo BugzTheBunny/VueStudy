@@ -3,6 +3,36 @@
     <div class="q-pa-md">
       <q-list bordered padding>
 
+        <q-item-label header>Profile</q-item-label>
+
+        <q-item tag="label" v-ripple>
+          <q-item-section>
+            <q-item-label>Avatar</q-item-label>
+          </q-item-section>
+          <q-item-section side >
+            <q-file
+             outlined
+             label="Upload Avatar"
+             dense
+             v-model="storeSettings.profile.avatarURL"
+             @update:model-value="storeSettings.uploadAvatar"
+            >
+              <template v-slot:prepend>
+                <q-avatar
+                  v-if="storeSettings.profile.avatarURL"
+                >
+                  <img :src="storeSettings.profile.avatarURL" >
+                </q-avatar>
+                <q-icon  v-else name="attach_file" />
+              </template>
+            </q-file>
+          </q-item-section>
+        </q-item>
+
+
+
+        <q-separator spaced />
+
         <q-item-label header>Entries</q-item-label>
 
         <q-item tag="label" v-ripple>
@@ -26,7 +56,7 @@
             />
           </q-item-section>
         </q-item>
-        
+
         <q-item tag="label" v-ripple>
           <q-item-section>
             <q-input
@@ -89,7 +119,7 @@
   /*
     imports
   */
-  
+
     import { useStoreSettings } from 'src/stores/storeSettings'
     import vSelectAll from 'src/directives/directiveSelectAll'
 
@@ -97,7 +127,7 @@
   /*
     stores
   */
-  
+
     const storeSettings = useStoreSettings()
 
 </script>

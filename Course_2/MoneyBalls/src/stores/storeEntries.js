@@ -6,6 +6,8 @@ import { useNoneReactiveCopy } from 'src/use/useNoneReactiveCopy'
 import { useStoreAuth } from 'src/stores/storeAuth'
 import supabase from 'src/config/supabase'
 
+let entriesChannel;
+
 export const useStoreEntries = defineStore('entries', () => {
 
   /*
@@ -19,30 +21,6 @@ export const useStoreEntries = defineStore('entries', () => {
       //   amount: 4999.99,
       //   paid: true,
       //   order: 1,
-      //   user_id: 'user-id-123',
-      // },
-      // {
-      //   id: 'id2',
-      //   name: 'Rent',
-      //   amount: -999,
-      //   paid: false,
-      //   order: 2,
-      //   user_id: 'user-id-123',
-      // },
-      // {
-      //   id: 'id3',
-      //   name: 'Phone bill',
-      //   amount: -14.99,
-      //   paid: false,
-      //   order: 3,
-      //   user_id: 'user-id-123',
-      // },
-      // {
-      //   id: 'id4',
-      //   name: 'Unknown',
-      //   amount: 0,
-      //   paid: false,
-      //   order: 4,
       //   user_id: 'user-id-123',
       // },
     ])
@@ -108,10 +86,15 @@ export const useStoreEntries = defineStore('entries', () => {
 
     const subscribeEntries = () => {
       const storeAuth = useStoreAuth()
-      supabase.channel('entries_channel')
+      entriesChannel = supabase.channel('entries_channel')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'entries' ,filter: `user_id=eq.${storeAuth.userDetails.id}`},
+        {
+          event: '*',
+          schema: 'public',
+          table: 'entries',
+          filter: `user_id=eq.${storeAuth.userDetails.id}`
+        },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             entries.value.push(payload.new)
@@ -133,6 +116,15 @@ export const useStoreEntries = defineStore('entries', () => {
       .subscribe()
     }
 
+    const unsubscribeEntries = () => supabase.removeChannel(entriesChannel)
+
+    const updateEntriesCount = async () => {
+      // NOTE: not used in the app, but can be used to update the entries count
+      const { error } = await supabase.rpc('increment_entries_count')
+      if (error) useShowErrorMessage(error?.message || 'Failed to update entries count')
+      else console.log('Entries count updated:')
+    }
+
     const addEntry = async addEntryForm => {
       const storeAuth = useStoreAuth()
       const newEntry = Object.assign({}, addEntryForm, {
@@ -151,6 +143,14 @@ export const useStoreEntries = defineStore('entries', () => {
       if (error) {
         useShowErrorMessage(error?.message || 'Failed to add entry')
       }
+    }
+
+    const clearEntries = () => {
+      entries.value = []
+      Notify.create({
+        message: 'Entries cleared',
+        position: 'top'
+      })
     }
 
     const deleteEntry = entryId => {
@@ -189,6 +189,8 @@ export const useStoreEntries = defineStore('entries', () => {
     }
 
     const updateEntryOrderNumbers = async () => {
+      const storeAuth = useStoreAuth()
+
       let currentOrder = 1
       entries.value.forEach(entry => {
         entry.order = currentOrder
@@ -198,6 +200,7 @@ export const useStoreEntries = defineStore('entries', () => {
       const entriesUpsert = entries.value.map(entry => {
         return {
           id: entry.id,
+          user_id: storeAuth.userDetails.id,
           order: entry.order
         }
       })
@@ -266,7 +269,9 @@ export const useStoreEntries = defineStore('entries', () => {
 
       // actions
       loadEntries,
+      unsubscribeEntries,
       addEntry,
+      clearEntries,
       deleteEntry,
       updateEntry,
       sortEnd,

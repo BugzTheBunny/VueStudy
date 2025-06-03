@@ -4,6 +4,8 @@ import { useShowErrorMessage } from 'src/use/useShowErrorMessage'
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStoreEntries } from 'src/stores/storeEntries'
+import { useStoreSettings } from 'src/stores/storeSettings'
+import { store } from 'quasar/wrappers'
 
 export const useStoreAuth = defineStore('auth', () => {
 
@@ -20,7 +22,8 @@ export const useStoreAuth = defineStore('auth', () => {
   */
   const init = () => {
     const router = useRouter(),
-          storeEntries = useStoreEntries()
+          storeEntries = useStoreEntries(),
+          storeSettings = useStoreSettings()
 
     // Listen for authentication state changes
     supabase.auth.onAuthStateChange((event, session) => {
@@ -29,12 +32,15 @@ export const useStoreAuth = defineStore('auth', () => {
           userDetails.id = session.user.id
           userDetails.email = session.user.email
           router.push('/')
+          storeSettings.getAvatarUrl()
           storeEntries.loadEntries()
 
         }
       } else if (event === 'SIGNED_OUT') {
           userDetails.id = null
           userDetails.email = null
+          storeEntries.clearEntries()
+          storeEntries.unsubscribeEntries()
           router.replace('/auth')
         }
       })

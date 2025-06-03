@@ -35,7 +35,6 @@ input::-webkit-inner-spin-button {
     text-transform: none;
   }
 }
-
 // entries
 .entries {
   .q-slide-item {
@@ -84,3 +83,15 @@ input::-webkit-inner-spin-button {
 .auth {
   min-width: 320px;
 }
+
+.entries-count {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius:60px;
+  opacity: 0;
+  &.fade-in {
+    opacity: 1;
+    transition: opacity 0.8s ease-in-out;
+  }
+}
+
+
